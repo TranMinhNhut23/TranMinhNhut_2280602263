@@ -5,28 +5,40 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Quản lý Posts</title>
 </head>
 
 <body>
-    <script src="./main.js"></script>
+    <h2>Quản lý Posts</h2>
+
     <div>
-        <input type="text" id="id">
+        <label for="title">Title:</label>
         <input type="text" id="title">
-        <input type="text" id="view">
+
+        <label for="view">Views:</label>
+        <input type="number" id="view">
+
         <input type="button" id="submit" onclick="SaveData()" value="Save">
     </div>
+
+    <br>
+
     <div>
-        <table>
+        <table border="1" cellspacing="0" cellpadding="5">
             <thead>
-                <td>ID</td>
-                <td>Title</td>
-                <td>Views</td>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Views</th>
+                    <th>Actions</th>
+                </tr>
             </thead>
             <tbody id="body">
             </tbody>
         </table>
     </div>
+
+    <script src="./main.js"></script>
 </body>
 
 </html>

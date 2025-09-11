@@ -1,14 +1,18 @@
 LoadData();
 
 //GET: domain:port//posts
-//GET: domain:port/posts/id
 async function LoadData() {
     try {
         let data = await fetch('http://localhost:3000/posts');
         let posts = await data.json();
+
+        let body = document.getElementById("body");
+        body.innerHTML = "";
+
         for (const post of posts) {
-            let body = document.getElementById("body");
-            body.innerHTML += convertDataToHTML(post);
+            if (!post.isDelete) {
+                body.innerHTML += convertDataToHTML(post);
+            }
         }
     } catch (error) {
         console.error("Lỗi LoadData:", error);
@@ -28,54 +32,59 @@ function convertDataToHTML(post) {
 //POST hoặc PUT: domain:port//posts + body
 async function SaveData() {
     try {
-        let id = document.getElementById("id").value;
         let title = document.getElementById("title").value;
         let view = document.getElementById("view").value;
 
-        let response = await fetch("http://localhost:3000/posts/" + id);
+        let data = await fetch("http://localhost:3000/posts");
+        let posts = await data.json();
 
-        if (response.ok) {
-            // PUT (update)
-            let dataObj = {
-                title: title,
-                views: view
-            };
-            let result = await fetch('http://localhost:3000/posts/' + id, {
-                method: 'PUT',
-                body: JSON.stringify(dataObj),
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            });
-            console.log("Update thành công:", await result.json());
-        } else {
-            // POST (create)
-            let dataObj = {
-                id: id,
-                title: title,
-                views: view
-            };
-            let result = await fetch('http://localhost:3000/posts', {
-                method: 'POST',
-                body: JSON.stringify(dataObj),
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            });
-            console.log("Thêm mới thành công:", await result.json());
+        let newId = 1;
+        if (posts.length > 0) {
+            newId = Math.max(...posts.map(p => parseInt(p.id) || 0)) + 1;
         }
+
+        let dataObj = {
+            id: newId,
+            title: title,
+            views: view,
+            isDelete: false
+        };
+
+        let result = await fetch('http://localhost:3000/posts', {
+            method: 'POST',
+            body: JSON.stringify(dataObj),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        console.log("Thêm mới thành công:", await result.json());
+        LoadData();
     } catch (error) {
         console.error("Lỗi SaveData:", error);
     }
 }
 
-//DELETE: domain:port//posts/id
+
+// Soft Delete: update record thành isDelete = true
 async function Delete(id) {
     try {
-        await fetch('http://localhost:3000/posts/' + id, {
-            method: 'DELETE'
-        });
-        console.log("Delete thành công");
+        let response = await fetch('http://localhost:3000/posts/' + id);
+        if (response.ok) {
+            let post = await response.json();
+            post.isDelete = true;
+
+            await fetch('http://localhost:3000/posts/' + id, {
+                method: 'PUT',
+                body: JSON.stringify(post),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            console.log("Xóa mềm thành công");
+            LoadData();
+        }
     } catch (error) {
         console.error("Lỗi Delete:", error);
     }
