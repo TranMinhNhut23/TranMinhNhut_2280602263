@@ -4,9 +4,69 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Posts Data</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
 </head>
 <body>
-    <p>ABOUT</p>
+    <h1>Posts Data</h1>
+    <div id="postsContainer">Loading...</div>
+
+    <script>
+        // Fetch posts data when page loads
+        fetch('http://localhost:3000/posts')
+            .then(response => response.json())
+            .then(posts => {
+                const container = document.getElementById('postsContainer');
+                
+                // Create table
+                const table = document.createElement('table');
+                
+                // Create table header
+                const thead = document.createElement('thead');
+                thead.innerHTML = `
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Views</th>
+                    </tr>
+                `;
+                table.appendChild(thead);
+                
+                // Create table body
+                const tbody = document.createElement('tbody');
+                posts.forEach(post => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${post.id}</td>
+                        <td>${post.title}</td>
+                        <td>${post.views}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                table.appendChild(tbody);
+                
+                // Replace loading message with table
+                container.innerHTML = '';
+                container.appendChild(table);
+            })
+            .catch(error => {
+                document.getElementById('postsContainer').innerHTML = 
+                    'Error loading posts: ' + error.message;
+            });
+    </script>
 </body>
 </html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Posts Viewer</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #suggestions {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #suggestions li {
+            padding: 5px;
+            border-bottom: 1px solid #ccc;
+            cursor: pointer;
+        }
+
+        #suggestions li:hover {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Danh sách Posts</h1>
+
+    <input type="text" id="search" placeholder="Tìm theo tiêu đề...">
+    <ul id="suggestions"></ul>
+
+    <hr>
+
+    <div>
+        <label>Views từ: <span id="minVal">0</span></label>
+        <input type="range" id="minRange" min="0" max="6000" value="0">
+
+        <label>đến: <span id="maxVal">6000</span></label>
+        <input type="range" id="maxRange" min="0" max="6000" value="6000">
+    </div>
+
+    <h2>Kết quả lọc theo Views</h2>
+    <div id="filteredPosts"></div>
+
+    <hr>
+
+    <h2>Tất cả Posts</h2>
+    <div id="posts"></div>
+
+    <script>
+        async function loadPosts() {
+            let res = await fetch("http://localhost:3000/posts");
+            let posts = await res.json();
+
+            let container = document.getElementById("posts");
+            container.innerHTML = posts.map(p => `<p>${p.id} - ${p.title} (${p.views} views)</p>`).join("");
+        }
+
+        loadPosts();
+
+        let searchInput = document.getElementById("search");
+        let suggestionBox = document.getElementById("suggestions");
+
+        searchInput.addEventListener("input", async () => {
+            let keyword = searchInput.value;
+            if (keyword.length === 0) {
+                suggestionBox.innerHTML = "";
+                return;
+            }
+            let res = await fetch(`http://localhost:3000/posts?title_like=${keyword}`);
+            let posts = await res.json();
+
+            suggestionBox.innerHTML = posts.map(p => `<li>${p.title}</li>`).join("");
+        });
+
+        let minRange = document.getElementById("minRange");
+        let maxRange = document.getElementById("maxRange");
+        let minVal = document.getElementById("minVal");
+        let maxVal = document.getElementById("maxVal");
+        let filteredBox = document.getElementById("filteredPosts");
+
+        async function filterByViews() {
+            let min = minRange.value;
+            let max = maxRange.value;
+
+            minVal.textContent = min;
+            maxVal.textContent = max;
+
+            let res = await fetch(`http://localhost:3000/posts?views_gte=${min}&views_lte=${max}`);
+            let posts = await res.json();
+
+            filteredBox.innerHTML = posts.map(p => `<p>${p.title} (${p.views} views)</p>`).join("");
+        }
+
+        minRange.addEventListener("input", filterByViews);
+        maxRange.addEventListener("input", filterByViews);
+
+        filterByViews();
+    </script>
+</body>
+
+</html>
