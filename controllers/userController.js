@@ -12,17 +12,19 @@ exports.createUser = async (req, res) => {
     }
 };
 
-// Get all users with search functionality
 exports.getAllUsers = async (req, res) => {
     try {
         const { username, fullName } = req.query;
         let query = { isDelete: false };
 
-        if (username) {
-            query.username = { $regex: username, $options: 'i' };
-        }
-        if (fullName) {
-            query.fullName = { $regex: fullName, $options: 'i' };
+        if (username || fullName) {
+            query.$or = [];
+            if (username) {
+                query.$or.push({ username: { $regex: username, $options: 'i' } });
+            }
+            if (fullName) {
+                query.$or.push({ fullName: { $regex: fullName, $options: 'i' } });
+            }
         }
 
         const users = await User.find(query).populate('role');
