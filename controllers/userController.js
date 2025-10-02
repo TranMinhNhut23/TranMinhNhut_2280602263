@@ -94,19 +94,16 @@ exports.updateUserRole = async (req, res) => {
     try {
         const { userId, roleId } = req.body;
 
-        // Kiểm tra user tồn tại
         const user = await User.findOne({ _id: userId, isDelete: false });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Kiểm tra role tồn tại
         const role = await Role.findById(roleId);
         if (!role) {
             return res.status(404).json({ message: 'Role not found' });
         }
 
-        // Gán role cho user
         user.role = role._id;
         await user.save();
 
