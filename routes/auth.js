@@ -6,8 +6,8 @@ let bcrypt = require('bcrypt');
 let jwt = require('jsonwebtoken')
 let { Response } = require('../utils/responseHandler')
 let { Authentication, Authorization } = require('../utils/authHandler')
-let { validatorRegister, validatorChangpassword, validatedResult, validatorAvatar } = require('../utils/validator')
-
+let { validatorRegister, validatorChangpassword, validatorForgotPassword, validatedResult } = require('../utils/validator')
+let { sendMail } = require('../utils/sendMailHandler');
 
 router.post('/register', validatorRegister, validatedResult, async function (req, res, next) {
   let role = await roles.findOne({ name: "USER" });
@@ -75,21 +75,56 @@ router.post('/changepassword', Authentication, validatorChangpassword, validated
   }
 
 })
-router.post('/change-avatar',
-    Authentication,
-    validatorAvatar,
-    validatedResult,
-    async function (req, res, next) {
-        try {
-            let user = await users.findById(req.userId);
-            user.avatarURL = req.body.avatarURL;
-            await user.save();
-            Response(res, 200, true, "Avatar updated successfully");
-        } catch (error) {
-            Response(res, 500, false, "Error updating avatar");
-        }
+router.post('/forgotpassword', validatorForgotPassword, async function (req, res, next) {
+  let user = await users.find({
+    email: req.body.email
+  })
+  if (user.length > 0) {
+    user = user[0];
+    user.forgotPasswordToken = GenerateRandomString(64);
+    user.forgotPasswordTokenExp = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+    let URL = "http://localhost:3000/auth/resetpassword/" + user.forgotPasswordToken;
+    await sendMail(user.email, URL)
+    Response(res, 200, true, URL);
+  } else {
+    Response(res, 404, false, "email khogn ton tai");
+  }
+})
+router.post('/resetpassword/:token', async function (req, res, next) {
+  let user = await users.find({
+    forgotPasswordToken: req.params.token
+  })
+  if (user.length > 0) {
+    user = user[0];
+    if (user.forgotPasswordTokenExp < Date.now()) {
+      user.forgotPasswordToken = "";
+      user.forgotPasswordTokenExp = 0;
+      await user.save();
+      Response(res, 404, false, "token het han");
+    } else {
+      user.password = req.body.newpassword;
+      user.forgotPasswordToken = "";
+      user.forgotPasswordTokenExp = 0;
+      await user.save();
+      Response(res, 200, true, "doi pass thanh cong");
     }
-);
+  } else {
+    Response(res, 404, false, "token khong ton tai");
+  }
+
+})
+
+
+function GenerateRandomString(length) {
+  let result = "";
+  let source = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  for (let index = 0; index < length; index++) {
+    let random = Math.floor(Math.random() * source.length);
+    result += source.charAt(random);
+  }
+  return result;
+}
 
 
 module.exports = router;
