@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Avatar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .upload-container {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .preview {
+            max-width: 200px;
+            margin: 10px auto;
+        }
+
+        .preview img {
+            max-width: 100%;
+            border-radius: 50%;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background: #ccc;
+        }
+
+        #token-input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Upload Avatar</h1>
+
+    <div>
+        <label for="token-input">Authentication Token:</label>
+        <input type="text" id="token-input" placeholder="Bearer your-token-here">
+    </div>
+
+    <div class="upload-container">
+        <h3>Single Avatar Upload</h3>
+        <input type="file" id="avatar-input" accept="image/*">
+        <div class="preview" id="single-preview"></div>
+        <button onclick="uploadSingle()">Upload Avatar</button>
+        <div id="single-message"></div>
+    </div>
+
+    <div class="upload-container">
+        <h3>Multiple Images Upload</h3>
+        <input type="file" id="multi-input" accept="image/*" multiple>
+        <div class="preview" id="multi-preview"></div>
+        <button onclick="uploadMultiple()">Upload Images</button>
+        <div id="multi-message"></div>
+    </div>
+
+    <script>
+        // Preview functions
+        document.getElementById('avatar-input').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('single-preview').innerHTML =
+                        `<img src="${e.target.result}" alt="Preview">`;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('multi-input').addEventListener('change', function (e) {
+            const files = e.target.files;
+            document.getElementById('multi-preview').innerHTML = '';
+            for (let file of files) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('multi-preview').innerHTML +=
+                        `<img src="${e.target.result}" alt="Preview" style="width: 100px; margin: 5px;">`;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Upload functions
+        async function uploadSingle() {
+            const token = document.getElementById('token-input').value;
+            const fileInput = document.getElementById('avatar-input');
+            const messageDiv = document.getElementById('single-message');
+
+            if (!fileInput.files[0]) {
+                messageDiv.innerHTML = '<p class="error">Please select a file</p>';
+                return;
+            }
+
+            if (!token) {
+                messageDiv.innerHTML = '<p class="error">Please enter authentication token</p>';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', fileInput.files[0]);
+
+            try {
+                const response = await fetch('http://127.0.0.1:3000/files/uploads', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token
+                    },
+                    body: formData,
+                    credentials: 'include'
+                });
+
+                // Kiểm tra response status và kiểu dữ liệu
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    throw new TypeError("Response not JSON");
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    messageDiv.innerHTML = `<p class="success">Avatar uploaded successfully!</p>`;
+                    // Refresh preview with new avatar
+                    document.getElementById('single-preview').innerHTML =
+                        `<img src="${result.data.avatarURL}" alt="Uploaded avatar">`;
+                } else {
+                    messageDiv.innerHTML = `<p class="error">${result.data}</p>`;
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                messageDiv.innerHTML = `<p class="error">Upload failed: ${error.message}</p>`;
+            }
+        }
+
+        async function uploadMultiple() {
+            const token = document.getElementById('token-input').value;
+            const fileInput = document.getElementById('multi-input');
+            const messageDiv = document.getElementById('multi-message');
+
+            if (!fileInput.files.length) {
+                messageDiv.innerHTML = '<p class="error">Please select files</p>';
+                return;
+            }
+
+            if (!token) {
+                messageDiv.innerHTML = '<p class="error">Please enter authentication token</p>';
+                return;
+            }
+
+            const formData = new FormData();
+            for (let file of fileInput.files) {
+                formData.append('image', file);
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/files/uploadMulti', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token
+                    },
+                    body: formData,
+                    credentials: 'include'
+                });
+
+                // Kiểm tra response status và kiểu dữ liệu
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    throw new TypeError("Response not JSON");
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    messageDiv.innerHTML = `<p class="success">Files uploaded successfully!</p>`;
+                } else {
+                    messageDiv.innerHTML = `<p class="error">${result.data}</p>`;
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                messageDiv.innerHTML = `<p class="error">Upload failed: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+
+</html>

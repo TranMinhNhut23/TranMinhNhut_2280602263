@@ -8,6 +8,7 @@ let { Response } = require('../utils/responseHandler')
 let { Authentication, Authorization } = require('../utils/authHandler')
 let { validatorRegister, validatorChangpassword, validatorForgotPassword, validatedResult } = require('../utils/validator')
 let { sendMail } = require('../utils/sendMailHandler');
+let { uploadAFileWithField } = require('../utils/uploadHandler');
 
 router.post('/register', validatorRegister, validatedResult, async function (req, res, next) {
   let role = await roles.findOne({ name: "USER" });
@@ -22,29 +23,41 @@ router.post('/register', validatorRegister, validatedResult, async function (req
   Response(res, 200, true, "dang ki thanh cong");
 });
 router.post('/login', async function (req, res, next) {
-  let username = req.body.username;
-  let password = req.body.password;
-  let user = await users.findOne({
-    username: username
-  })
-  if (user.length == 0) {
-    Response(res, 404, false, "user khong ton tai");
-    return;
-  } else {
+  try {
+    let username = req.body.username;
+    let password = req.body.password;
+    
+    let user = await users.findOne({
+      username: username,
+      isDeleted: false
+    });
+
+    if (!user) {
+      return Response(res, 404, false, "User not found");
+    }
+
     let result = bcrypt.compareSync(password, user.password);
     if (result) {
       let token = jwt.sign({
         _id: user._id,
         exp: Date.now() + 15 * 60 * 1000
       }, "NNPTUD");
+      
       res.cookie("token", "Bearer " + token, {
         httpOnly: true,
         maxAge: 60 * 1000 * 60 * 24 * 7
-      })
+      });
+      
+      // Update login count
+      user.loginCount += 1;
+      await user.save();
+
       Response(res, 200, true, token);
     } else {
-      Response(res, 403, false, "user sai password");
+      Response(res, 403, false, "Incorrect password");
     }
+  } catch (error) {
+    Response(res, 500, false, error.message);
   }
 });
 router.post("/logout", function (req, res, next) {
@@ -114,7 +127,30 @@ router.post('/resetpassword/:token', async function (req, res, next) {
   }
 
 })
+// Thêm route upload avatar
+router.post('/upload-avatar',
+    Authentication,
+    uploadAFileWithField('avatar'),
+    async function (req, res, next) {
+        try {
+            if (!req.file) {
+                return Response(res, 400, false, "No file uploaded or invalid file type");
+            }
 
+            const avatarURL = `${req.protocol}://${req.get('host')}/files/${req.file.filename}`;
+            let user = await users.findById(req.userId);
+            user.avatarURL = avatarURL;
+            await user.save();
+
+            Response(res, 200, true, {
+                message: "Avatar updated successfully",
+                avatarURL: avatarURL
+            });
+        } catch (error) {
+            Response(res, 500, false, error.message);
+        }
+    }
+);
 
 function GenerateRandomString(length) {
   let result = "";
