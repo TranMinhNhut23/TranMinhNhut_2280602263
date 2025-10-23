@@ -26,7 +26,7 @@ router.post('/login', async function (req, res, next) {
   try {
     let username = req.body.username;
     let password = req.body.password;
-    
+
     let user = await users.findOne({
       username: username,
       isDeleted: false
@@ -40,14 +40,14 @@ router.post('/login', async function (req, res, next) {
     if (result) {
       let token = jwt.sign({
         _id: user._id,
-        exp: Date.now() + 15 * 60 * 1000
+        exp: Date.now() + 60 * 60 * 1000
       }, "NNPTUD");
-      
+
       res.cookie("token", "Bearer " + token, {
         httpOnly: true,
         maxAge: 60 * 1000 * 60 * 24 * 7
       });
-      
+
       // Update login count
       user.loginCount += 1;
       await user.save();
@@ -129,27 +129,27 @@ router.post('/resetpassword/:token', async function (req, res, next) {
 })
 // Thêm route upload avatar
 router.post('/upload-avatar',
-    Authentication,
-    uploadAFileWithField('avatar'),
-    async function (req, res, next) {
-        try {
-            if (!req.file) {
-                return Response(res, 400, false, "No file uploaded or invalid file type");
-            }
+  Authentication,
+  uploadAFileWithField('avatar'),
+  async function (req, res, next) {
+    try {
+      if (!req.file) {
+        return Response(res, 400, false, "No file uploaded or invalid file type");
+      }
 
-            const avatarURL = `${req.protocol}://${req.get('host')}/files/${req.file.filename}`;
-            let user = await users.findById(req.userId);
-            user.avatarURL = avatarURL;
-            await user.save();
+      const avatarURL = `${req.protocol}://${req.get('host')}/files/${req.file.filename}`;
+      let user = await users.findById(req.userId);
+      user.avatarURL = avatarURL;
+      await user.save();
 
-            Response(res, 200, true, {
-                message: "Avatar updated successfully",
-                avatarURL: avatarURL
-            });
-        } catch (error) {
-            Response(res, 500, false, error.message);
-        }
+      Response(res, 200, true, {
+        message: "Avatar updated successfully",
+        avatarURL: avatarURL
+      });
+    } catch (error) {
+      Response(res, 500, false, error.message);
     }
+  }
 );
 
 function GenerateRandomString(length) {

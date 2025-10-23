@@ -16,6 +16,7 @@ mongoose.connect('mongodb://localhost:27017/NNPTUD-S5')
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var messagesRouter = require('./routes/messages');
 
 var app = express();
 
@@ -52,6 +53,7 @@ app.use('/users', usersRouter);
 app.use('/roles', require('./routes/roles'));
 app.use('/auth', require('./routes/auth'));
 app.use('/files', require('./routes/files'));
+app.use('/message', messagesRouter);
 
 // =========================
 // 🔹 Xử lý lỗi 404
