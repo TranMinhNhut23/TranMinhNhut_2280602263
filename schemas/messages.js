@@ -1,21 +1,21 @@
 let mongoose = require('mongoose');
 
 let messageSchema = new mongoose.Schema({
-    from: { 
-        type: mongoose.Schema.Types.ObjectId, 
+    from: {
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'user',
-        required: true 
+        required: true
     },
-    to: { 
-        type: mongoose.Schema.Types.ObjectId, 
+    to: {
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'user',
-        required: true 
+        required: true
     },
-    text: { 
-        type: String, 
-        required: true 
+    text: {
+        type: String,
+        required: true
     }
-}, { 
+}, {
     timestamps: true // Tự động thêm createdAt và updatedAt
 });
 

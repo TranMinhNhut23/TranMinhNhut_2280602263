@@ -12,7 +12,7 @@ const messageValidator = [
 ];
 
 // GET /message/:userId - Lấy danh sách tin nhắn giữa 2 người
-router.get('/:userId', Authentication, async function(req, res) {
+router.get('/:userId', Authentication, async function (req, res) {
     try {
         const messages = await Message.find({
             $or: [
@@ -20,9 +20,9 @@ router.get('/:userId', Authentication, async function(req, res) {
                 { from: req.params.userId, to: req.userId }
             ]
         })
-        .sort({ createdAt: 1 }) // Sắp xếp theo thời gian tăng dần
-        .populate('from', 'username')
-        .populate('to', 'username');
+            .sort({ createdAt: 1 }) // Sắp xếp theo thời gian tăng dần
+            .populate('from', 'username')
+            .populate('to', 'username');
 
         Response(res, 200, true, messages);
     } catch (error) {
@@ -31,7 +31,7 @@ router.get('/:userId', Authentication, async function(req, res) {
 });
 
 // POST /message - Gửi tin nhắn mới
-router.post('/', Authentication, messageValidator, async function(req, res) {
+router.post('/', Authentication, messageValidator, async function (req, res) {
     try {
         // Kiểm tra lỗi validation
         const errors = validationResult(req);
@@ -46,7 +46,7 @@ router.post('/', Authentication, messageValidator, async function(req, res) {
         });
 
         await newMessage.save();
-        
+
         // Populate thông tin người gửi/nhận trước khi trả về
         const populatedMessage = await Message.findById(newMessage._id)
             .populate('from', 'username')
